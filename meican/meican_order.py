@@ -9,16 +9,9 @@ from exceptions import NoOrderAvailable
 from commands import get_dishes, get_restaurants, get_tabs
 from models import Restaurant, Tab, Dish, Section, Order
 
-#----- todo 做成配置形式
-TARGET_WEEK_DAY = 2 #周三是2
-TARGET_RESTUANTS = ["麦当劳", "肯德基", "越南菜"] #目标餐馆
-TARGET_DISH = [["板烧鸡腿汉堡套餐"], [], ["菌菇"]] #目标ORDER
-SECOND_PRICE = 40 #找不到目标定单直接用价格
-
 #-- config --
 ORDER_FLAG = True #直接下单
 SCAN_TICK = 5 * 60 # 扫描时间
-TARGET_TILE = "午餐" #目标晚餐会直接下单 上面目标
 
 
 start_time = time.time()
@@ -26,7 +19,6 @@ settings = MeiCanSetting()
 settings.load_credentials()
 order_list = OrderSetting()
 
-# print(f"{settings.username}, {settings.password}, {settings.cookie}")
 meican = MeiCan(settings.username, settings.password, settings.cookie)
 def debug_print_json(data):
     print("data: ", json.dumps(data, indent=4, ensure_ascii=False))
@@ -46,6 +38,9 @@ def check_order(data_list, title):
         date = calenar["date"]
         for tar in calenar["calendarItemList"]:
             order_title = tar["title"]
+            if tar["status"] == "CLOSED":
+                print(f"{date}: {order_title}.订单关闭!!!")
+                is_order = True
             if tar["status"] == "ORDER" and tar["corpOrderUser"]:
                 first_order_name = tar["corpOrderUser"]["restaurantItemList"][0]["dishItemList"][0]["dish"]["name"]
                 print(f"{date}: {order_title}.已有订单: {first_order_name}")
