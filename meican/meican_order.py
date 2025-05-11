@@ -11,7 +11,7 @@ from models import Restaurant, Tab, Dish, Section, Order
 
 #-- config --
 ORDER_FLAG = True #直接下单
-SCAN_TICK = 5 * 60 # 扫描时间
+SCAN_TICK = 2 * 60 # 扫描时间
 
 
 start_time = time.time()
