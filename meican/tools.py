@@ -132,7 +132,8 @@ class MeiCan(object):
         self._session = requests.Session()
         user_agent = user_agent or "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
         self._session.headers["User-Agent"] = user_agent
-        self._session.headers["Cookie"] = cookie
+        if not cookie is None:
+            self._session.headers["Cookie"] = cookie
         self._calendar_items = None
         self._wed_day_calendar = None
         self._tabs = None
@@ -237,6 +238,10 @@ class MeiCan(object):
         :rtype: dict | str | unicode
         """
         response = self._request("post", url, data, **kwargs)
+        # print("-------------- cookie :", response.cookies)
+        # cookies = response.cookies
+        # for cookie in cookies:
+        #     print(f"name :{cookie.name}, value: {cookie.value}, path: {cookie.path}")
         return response.json()
 
     def _request(self, method, url, data=None, **kwargs):
@@ -251,6 +256,10 @@ class MeiCan(object):
         response = func(url, data=data, **kwargs)  # type: requests.Response
         response.encoding = response.encoding or "utf-8"
         self.responses.append(response)
+        # print("-------------- cookie :", response.cookies)
+        # cookies = response.cookies
+        # for cookie in cookies:
+        #     print(f"name :{cookie.name}, value: {cookie.value}, path: {cookie.path}")
         if response.status_code != 200:
             error = response.json()
             raise MeiCanError("[{}] {}".format(error.get("error", ""), error.get("error_description", "")))

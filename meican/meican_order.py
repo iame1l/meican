@@ -19,7 +19,8 @@ settings = MeiCanSetting()
 settings.load_credentials()
 order_list = OrderSetting()
 
-meican = MeiCan(settings.username, settings.password, settings.cookie)
+# meican = MeiCan(settings.username, settings.password, settings.cookie)
+meican = MeiCan(settings.username, settings.password)
 def debug_print_json(data):
     print("data: ", json.dumps(data, indent=4, ensure_ascii=False))
 
@@ -73,12 +74,16 @@ def find_dish_and_order(data_list, order_config):
         if y.name.find(order_config.restuantname) != -1:
             dishes_list = meican.get_dishes(y)
     # print(dishes_list)
+    if dishes_list is None:
+        print(f"餐馆没有可选!")
+        return
+
     for i in order_config.dishname:
         for y in dishes_list: 
             # print(f"{i.restaurant.name}, {i.name}, {i.price}, ")
             if y.name.find(i) != -1:
-                meican.order(y)
-                print(f"下单成功, {y.restaurant}, {y.name}, {y.price}")
+                data = meican.order(y)
+                print(f"下单结果:,{data["message"]}, {y.restaurant}, {y.name}, {y.price}")
                 return
 
 
