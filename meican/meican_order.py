@@ -11,7 +11,7 @@ from models import Restaurant, Tab, Dish, Section, Order
 
 #-- config --
 ORDER_FLAG = True #直接下单
-SCAN_TICK = 2 * 60 # 扫描时间
+SCAN_TICK = 10 * 60 # 扫描时间
 
 
 start_time = time.time()
@@ -20,7 +20,7 @@ settings.load_credentials()
 order_list = OrderSetting()
 
 # meican = MeiCan(settings.username, settings.password, settings.cookie)
-meican = MeiCan(settings.username, settings.password)
+# meican = MeiCan(settings.username, settings.password)
 def debug_print_json(data):
     print("data: ", json.dumps(data, indent=4, ensure_ascii=False))
 
@@ -31,7 +31,7 @@ def print_time():
     seconds = int(timer - hours * 3600 - minutes)
     print(f"meican bot for {hours}h {minutes}m {seconds}s")
 
-def check_order(data_list, title):
+def check_order(meican, data_list, title):
     is_order = False # 是否已下单
     for calenar in data_list:
         # print(type(calenar))
@@ -50,7 +50,7 @@ def check_order(data_list, title):
     return is_order 
 
 
-def find_dish_and_order(data_list, order_config):
+def find_dish_and_order(meican, data_list, order_config):
     # debug_print_json(data_list)
     tar_cal = None
     for calenar in data_list:
@@ -91,15 +91,16 @@ def execute(argv=None):
 
     while True: 
         print_time()
+        meican = MeiCan(settings.username, settings.password)
         meican.load_tabs(True)
         try:
             for i in order_list._order:
                 # print(repr(i))
                 # test_data = meican.get_day(i.weekday)
                 test_data = meican.get_wed_dateList()
-                is_order = check_order(test_data, i.title)
+                is_order = check_order(meican, test_data, i.title)
                 if not is_order:
-                    find_dish_and_order(test_data, i)
+                    find_dish_and_order(meican, test_data, i)
         except NoOrderAvailable:
             print("别急，下一顿还没开放订餐")
             return
