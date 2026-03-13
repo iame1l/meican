@@ -2,7 +2,7 @@ import json
 from os.path import exists, expanduser, join
 from models import Order
 
-setting_file = join(expanduser("./"), ".meicanrc")
+setting_file = join(expanduser("./"), ".meicanrc") #TODO 位置文件要更改
 order_file = join(expanduser("./"), "order.json")
 
 
