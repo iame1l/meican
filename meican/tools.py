@@ -110,15 +110,44 @@ class RestUrl(object):
         :type dish: meican.models.Dish
         :type address_uid: str
         """
-        tab = dish.restaurant.tab
+        # tab = dish.restaurant.tab
         # address_uid = address_uid or tab.addresses[0].uid
+        tab = None
+
+        target_order = [];
+        for i in dish:
+            if tab is None:
+                tab = i.restaurant.tab
+            target_order.append({"count": "1", "dishId": "{}".format(i.id)})
+
         data = {
-            "order": json.dumps([{"count": "1", "dishId": "{}".format(dish.id)}]),
+            # "order": json.dumps([{"count": "1", "dishId": "{}".format(dish.id)}, {"count": "1", "dishId": "{}".format(dish.id)}]),
+            "order": json.dumps(target_order),
             "tabUniqueId": tab.uid,
             "targetTime": tab.target_time,
             "corpAddressUniqueId": "",
             "userAddressUniqueId": "",
         }
+        # TODO 支持多餐馆下单
+        # data = {
+        #     "dishes":
+        #         [{
+        #     "order": json.dumps([{"count": "1", "dishId": "{}".format(dish.id)}]),
+        #     "tabUniqueId": tab.uid,
+        #     "targetTime": tab.target_time,
+        #     "corpAddressUniqueId": "",
+        #     "userAddressUniqueId": "",
+        # },
+        # {
+        #     "order": json.dumps([{"count": "1", "dishId": "{}".format(dish.id)}]),
+        #     "tabUniqueId": tab.uid,
+        #     "targetTime": tab.target_time,
+        #     "corpAddressUniqueId": "",
+        #     "userAddressUniqueId": "",
+        # }
+        #         ]
+            
+        # }
         return cls.get_base_url("preorder/api/v2.1/orders/add", data, wrap=False)
 
 
@@ -182,7 +211,7 @@ class MeiCan(object):
     def get_wed_dateList(self):
         return self.http_get(RestUrl.get_wednesday())["dateList"]
 
-    def get_day(self, target_day):
+    def get_day_dateList(self, target_day):
         return self.http_get(RestUrl.get_day(target_day))["dateList"]
 
     def get_dishes(self, restaurant):

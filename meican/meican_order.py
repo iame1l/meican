@@ -64,7 +64,6 @@ def find_dish_and_order(meican, data_list, order_config):
         print("找到不到目标")
         return
     
-    # print("============================")
     # debug_print_json(tar_cal)
     tab = Tab(tar_cal)
     restaurants = meican.get_restaurants(tab)
@@ -78,14 +77,20 @@ def find_dish_and_order(meican, data_list, order_config):
         print(f"餐馆没有可选!")
         return
 
+    target_dishes = []
     for i in order_config.dishname:
         for y in dishes_list: 
             # print(f"{i.restaurant.name}, {i.name}, {i.price}, ")
             if y.name.find(i) != -1:
-                data = meican.order(y)
-                print(f"下单结果:,{data["message"]}, {y.restaurant}, {y.name}, {y.price}")
-                return
-
+                target_dishes.append(y)
+            pass
+        pass
+    pass
+                # data = meican.order(y)
+                # print(f"下单结果:,{data["message"]}, {y.restaurant}, {y.name}, {y.price}")
+                # return
+    data = meican.order(target_dishes)
+    print(f"下单结果:,{data["message"]}, {y.restaurant}, {y.name}, {y.price}")
 
 def execute(argv=None):
 
@@ -97,7 +102,7 @@ def execute(argv=None):
             for i in order_list._order:
                 # print(repr(i))
                 # test_data = meican.get_day(i.weekday)
-                test_data = meican.get_wed_dateList()
+                test_data = meican.get_day_dateList(i.weekday)
                 is_order = check_order(meican, test_data, i.title)
                 if not is_order:
                     find_dish_and_order(meican, test_data, i)
