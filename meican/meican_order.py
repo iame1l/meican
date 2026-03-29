@@ -78,9 +78,9 @@ def find_dish_and_order(meican, data_list, order_config):
         return
 
     target_dishes = []
-    for y in dishes_list: 
-        for i in order_config.dishname:
+    for i in order_config.dishname:
             # print(f"{i.restaurant.name}, {i.name}, {i.price}, ")
+        for y in dishes_list: 
             if y.name.find(i) != -1:
                 target_dishes.append(y)
                 break
