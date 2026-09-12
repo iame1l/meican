@@ -1,23 +1,30 @@
+import sys
 import time
 import json
 
 from .tools import MeiCan
 from .settings import MeiCanSetting, OrderSetting
-from .exceptions import NoOrderAvailable
+from .exceptions import MeiCanLoginFail, NoOrderAvailable
 from .models import Tab
 
 #-- config --
-ORDER_FLAG = True #直接下单
 SCAN_TICK = 10 * 60 # 扫描时间
 
 
 start_time = time.time()
 settings = MeiCanSetting()
-settings.load_credentials()
 order_list = OrderSetting()
 
-# meican = MeiCan(settings.username, settings.password, settings.cookie)
-# meican = MeiCan(settings.username, settings.password)
+
+def build_meican():
+    cookie = settings.load_cookie()
+    if not cookie:
+        print("没有找到 cookie，请先完成一次登录：")
+        print("    python -m meican.login")
+        sys.exit(1)
+    return MeiCan(cookie=cookie)
+
+
 def debug_print_json(data):
     print("data: ", json.dumps(data, indent=4, ensure_ascii=False))
 
@@ -96,9 +103,9 @@ def execute(argv=None):
 
     while True: 
         print_time()
-        meican = MeiCan(settings.username, settings.password)
-        meican.load_tabs(True)
         try:
+            meican = build_meican()
+            meican.load_tabs(True)
             for i in order_list._order:
                 # print(repr(i))
                 # test_data = meican.get_day(i.weekday)
@@ -106,6 +113,10 @@ def execute(argv=None):
                 is_order = check_order(meican, test_data, i.title)
                 if not is_order:
                     find_dish_and_order(meican, test_data, i)
+        except MeiCanLoginFail as error:
+            print("登录凭证不可用：{}".format(error))
+            print("请重新运行 `python -m meican.login` 更新 cookie")
+            return
         except NoOrderAvailable:
             print("别急，下一顿还没开放订餐")
             return

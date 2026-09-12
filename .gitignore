@@ -2,6 +2,7 @@
 .coverage
 MANIFEST
 .meicanrc
+.meicancookie
 
 *.pyc
 *.egg-info/

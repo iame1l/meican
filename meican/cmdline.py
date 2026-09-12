@@ -3,13 +3,15 @@ import sys
 
 from .tools import MeiCan
 from .settings import MeiCanSetting
-from .exceptions import NoOrderAvailable
+from .exceptions import MeiCanLoginFail, NoOrderAvailable
 
 
 def initialize_meican():
     settings = MeiCanSetting()
-    settings.load_credentials()
-    return MeiCan(settings.username, settings.password)
+    cookie = settings.load_cookie()
+    if not cookie:
+        raise MeiCanLoginFail("没有找到 cookie，请先运行 python -m meican.login")
+    return MeiCan(cookie=cookie)
 
 
 def execute(argv=None):

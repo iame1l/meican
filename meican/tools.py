@@ -9,6 +9,11 @@ from .commands import get_dishes, get_restaurants, get_tabs
 from .exceptions import MeiCanError, MeiCanLoginFail, NoOrderAvailable
 from .models import TabStatus
 
+DEFAULT_USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+)
+
 
 class RestUrl(object):
     """用来存储 MeiCan Rest 接口的类"""
@@ -149,27 +154,62 @@ class RestUrl(object):
 
 
 class MeiCan(object):
-    def __init__(self, username, password, cookie=None, user_agent=None):
+    """美餐客户端。
+
+    两种鉴权方式二选一：
+
+    * ``cookie``: 登录后拿到的 ``remember`` cookie，可长期复用（推荐）。
+    * ``username`` / ``password``: 每次构造时重新登录，仅用于换取 cookie。
+    """
+
+    @staticmethod
+    def login_cookie(username, password, user_agent=None):
+        """用账号密码登录一次，返回可长期复用的 cookie 字符串。
+
+        美餐登录后下发的 ``remember`` cookie 才是接口鉴权凭证：实测其值在多次
+        登录之间保持不变，且与机器无关；``PLAY_SESSION`` 单独使用无法通过鉴权。
+        """
+        session = requests.Session()
+        session.headers["User-Agent"] = user_agent or DEFAULT_USER_AGENT
+        response = session.post(
+            RestUrl.login(),
+            data={
+                "username": username,
+                "password": password,
+                "loginType": "username",
+                "remember": True,
+            },
+            timeout=30,
+        )
+        if 200 != response.status_code or "用户名或密码错误" in response.text:
+            raise MeiCanLoginFail("login fail because username or password incorrect")
+        remember = next((c.value for c in session.cookies if c.name == "remember"), None)
+        if not remember:
+            raise MeiCanLoginFail("login ok but no 'remember' cookie in response")
+        return "remember={}".format(remember)
+
+    def __init__(self, username=None, password=None, cookie=None, user_agent=None):
         """
         :type username: str | unicode
         :type password: str | unicode
         """
         self.responses = []
         self._session = requests.Session()
-        user_agent = user_agent or "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
-        self._session.headers["User-Agent"] = user_agent
-        if not cookie is None:
-            self._session.headers["Cookie"] = cookie
+        self._session.headers["User-Agent"] = user_agent or DEFAULT_USER_AGENT
         self._calendar_items = None
         self._wed_day_calendar = None
         self._tabs = None
         self._wed_day_tab = None
 
-        if not cookie:
+        if cookie:
+            self._session.headers["Cookie"] = cookie
+        elif username and password:
             form_data = {"username": username, "password": password, "loginType": "username", "remember": True}
             response = self._request("post", RestUrl.login(), form_data)
-            if 200 != response.status_code or "用户名或密码错误" in response.text:
+            if "用户名或密码错误" in response.text:
                 raise MeiCanLoginFail("login fail because username or password incorrect")
+        else:
+            raise MeiCanLoginFail("需要提供 cookie 或 username/password")
 
     @property
     def tabs(self):
@@ -254,6 +294,7 @@ class MeiCan(object):
         :rtype: dict | str | unicode
         """
         response = self._request("get", url, **kwargs)
+        self._raise_if_not_logged_in(response)
         return response.json()
 
     def http_post(self, url, data=None, **kwargs):
@@ -263,11 +304,20 @@ class MeiCan(object):
         :rtype: dict | str | unicode
         """
         response = self._request("post", url, data, **kwargs)
-        # print("-------------- cookie :", response.cookies)
-        # cookies = response.cookies
-        # for cookie in cookies:
-        #     print(f"name :{cookie.name}, value: {cookie.value}, path: {cookie.path}")
+        self._raise_if_not_logged_in(response)
         return response.json()
+
+    @staticmethod
+    def _raise_if_not_logged_in(response):
+        """未登录时接口返回 200 + HTML 登录页，而不是 401，这里统一识别。"""
+        content_type = response.headers.get("Content-Type", "").lower()
+        if "application/json" not in content_type:
+            raise MeiCanLoginFail(
+                "cookie 已失效或无效（接口返回 {} 而非 JSON）。"
+                "请重新运行 `python -m meican.login` 更新 cookie".format(
+                    content_type.split(";")[0] or "未知类型"
+                )
+            )
 
     def _request(self, method, url, data=None, **kwargs):
         """
@@ -281,11 +331,12 @@ class MeiCan(object):
         response = func(url, data=data, **kwargs)  # type: requests.Response
         response.encoding = response.encoding or "utf-8"
         self.responses.append(response)
-        # print("-------------- cookie :", response.cookies)
-        # cookies = response.cookies
-        # for cookie in cookies:
-        #     print(f"name :{cookie.name}, value: {cookie.value}, path: {cookie.path}")
         if response.status_code != 200:
-            error = response.json()
-            raise MeiCanError("[{}] {}".format(error.get("error", ""), error.get("error_description", "")))
+            try:
+                error = response.json()
+            except ValueError:
+                error = {}
+            raise MeiCanError("[{}] {} (HTTP {})".format(
+                error.get("error", ""), error.get("error_description", ""), response.status_code
+            ))
         return response

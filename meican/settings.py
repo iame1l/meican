@@ -1,34 +1,34 @@
 import json
+import os
 from os.path import abspath, dirname, exists, join
 
 from .models import Order
 
 # 配置固定放在工程根目录，避免受启动时的工作目录影响
 _project_root = dirname(dirname(abspath(__file__)))
-setting_file = join(_project_root, ".meicanrc")
+cookie_file = join(_project_root, ".meicancookie")
 order_file = join(_project_root, "order.json")
 
 
 class MeiCanSetting(object):
-    def __init__(self):
-        self._settings = {}
-        if not exists(setting_file):
-            return
-        with open(setting_file, encoding="utf-8") as f:
-            self._settings = json.load(f)
+    """美餐凭证：只从环境变量或 cookie 文件读取，不涉及账号密码。"""
 
-    def save(self):
-        with open(setting_file, "w", encoding="utf-8") as f:
-            f.write(json.dumps(self._settings, ensure_ascii=False, indent=2))
+    def load_cookie(self):
+        """优先取环境变量 MEICAN_COOKIE，其次读 .meicancookie 文件。"""
+        cookie = os.environ.get("MEICAN_COOKIE")
+        if cookie:
+            return cookie.strip()
+        if exists(cookie_file):
+            with open(cookie_file, encoding="utf-8") as f:
+                return f.read().strip() or None
+        return None
 
-    def load_credentials(self):
-        for key in ["username", "password"]:
-            if key not in self._settings:
-                self._settings[key] = input("please input your meican {}: ".format(key))
-        self.save()
+    def save_cookie(self, cookie):
+        """写入 cookie 文件并收紧权限，只有当前用户可读写。"""
+        with open(cookie_file, "w", encoding="utf-8") as f:
+            f.write(cookie.strip() + "\n")
+        os.chmod(cookie_file, 0o600)
 
-    def __getattr__(self, item):
-        return self._settings[item]
 
 class OrderSetting(object):
     def __init__(self):
