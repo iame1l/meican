@@ -1,9 +1,9 @@
 import argparse
 import sys
 
-from tools import MeiCan
-from settings import MeiCanSetting
-from exceptions import NoOrderAvailable
+from .tools import MeiCan
+from .settings import MeiCanSetting
+from .exceptions import NoOrderAvailable
 
 
 def initialize_meican():
@@ -23,7 +23,6 @@ def execute(argv=None):
     meican.load_tabs(True)
 
     try:
-        # print("AAAAAAAAAAAAAAAAAAAAAAAAaa: ", meican.tabs())
         # print(meican._calendar_items)
         # print(meican._wed_day_calendar)
         # print(meican._tabs)

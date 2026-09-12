@@ -1,9 +1,12 @@
 import json
-from os.path import exists, expanduser, join
-from models import Order
+from os.path import abspath, dirname, exists, join
 
-setting_file = join(expanduser("./"), ".meicanrc") #TODO 位置文件要更改
-order_file = join(expanduser("./"), "order.json")
+from .models import Order
+
+# 配置固定放在工程根目录，避免受启动时的工作目录影响
+_project_root = dirname(dirname(abspath(__file__)))
+setting_file = join(_project_root, ".meicanrc")
+order_file = join(_project_root, "order.json")
 
 
 class MeiCanSetting(object):
@@ -15,7 +18,7 @@ class MeiCanSetting(object):
             self._settings = json.load(f)
 
     def save(self):
-        with open(setting_file, str("w"), encoding="utf-8") as f:
+        with open(setting_file, "w", encoding="utf-8") as f:
             f.write(json.dumps(self._settings, ensure_ascii=False, indent=2))
 
     def load_credentials(self):

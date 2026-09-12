@@ -5,12 +5,9 @@ from urllib.parse import urlencode
 
 import requests
 
-# from meican.commands import get_dishes, get_restaurants, get_tabs
-# from meican.exceptions import MeiCanError, MeiCanLoginFail, NoOrderAvailable
-# from meican.models import TabStatus
-from commands import get_dishes, get_restaurants, get_tabs
-from exceptions import MeiCanError, MeiCanLoginFail, NoOrderAvailable
-from models import TabStatus
+from .commands import get_dishes, get_restaurants, get_tabs
+from .exceptions import MeiCanError, MeiCanLoginFail, NoOrderAvailable
+from .models import TabStatus
 
 
 class RestUrl(object):
@@ -193,11 +190,10 @@ class MeiCan(object):
 
     def load_tabs(self, refresh=False):
         if not self._calendar_items or refresh:
-            # self._calendar_items = self.http_get(RestUrl.calender_items())
-            # self._tabs = get_tabs(self._calendar_items)
-            # self._wed_day_calendar = self.http_get(RestUrl.get_wednesday())
-            # self._wed_day_tab = get_tabs(self._wed_day_calendar)
-            pass
+            self._calendar_items = self.http_get(RestUrl.calender_items())
+            self._tabs = get_tabs(self._calendar_items)
+            self._wed_day_calendar = self.http_get(RestUrl.get_wednesday())
+            self._wed_day_tab = get_tabs(self._wed_day_calendar)
 
     def get_restaurants(self, tab):
         """

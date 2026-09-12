@@ -1,5 +1,4 @@
-# from meican.models import Restaurant, Tab, Dish, Section
-from models import Restaurant, Tab, Dish, Section
+from .models import Restaurant, Tab, Dish, Section
 
 
 def get_tabs(data):

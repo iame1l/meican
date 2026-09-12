@@ -1,13 +1,10 @@
-import argparse
-import sys
 import time
 import json
 
-from tools import MeiCan
-from settings import MeiCanSetting, OrderSetting
-from exceptions import NoOrderAvailable
-from commands import get_dishes, get_restaurants, get_tabs
-from models import Restaurant, Tab, Dish, Section, Order
+from .tools import MeiCan
+from .settings import MeiCanSetting, OrderSetting
+from .exceptions import NoOrderAvailable
+from .models import Tab
 
 #-- config --
 ORDER_FLAG = True #直接下单
@@ -54,44 +51,46 @@ def find_dish_and_order(meican, data_list, order_config):
     # debug_print_json(data_list)
     tar_cal = None
     for calenar in data_list:
-        date = calenar["date"]
         for tar in calenar["calendarItemList"]:
             order_title = tar["title"]
             if order_title.find(order_config.title) != -1:
                 tar_cal = tar
                 break
+        if tar_cal is not None:
+            break
     if tar_cal is None:
-        print("找到不到目标")
+        print(f"找不到目标时段: {order_config.title}")
         return
-    
+
     # debug_print_json(tar_cal)
     tab = Tab(tar_cal)
     restaurants = meican.get_restaurants(tab)
     dishes_list = None
     # print(restaurants)
-    for y in restaurants:
-        if y.name.find(order_config.restuantname) != -1:
-            dishes_list = meican.get_dishes(y)
+    for restaurant in restaurants:
+        if restaurant.name.find(order_config.restuantname) != -1:
+            dishes_list = meican.get_dishes(restaurant)
+            break
     # print(dishes_list)
     if dishes_list is None:
-        print(f"餐馆没有可选!")
+        print(f"餐馆没有可选: {order_config.restuantname}")
         return
 
     target_dishes = []
-    for i in order_config.dishname:
-            # print(f"{i.restaurant.name}, {i.name}, {i.price}, ")
-        for y in dishes_list: 
-            if y.name.find(i) != -1:
-                target_dishes.append(y)
+    for name in order_config.dishname:
+        for dish in dishes_list:
+            if dish.name.find(name) != -1:
+                target_dishes.append(dish)
                 break
-            pass
-        pass
-    pass
-                # data = meican.order(y)
-                # print(f"下单结果:,{data["message"]}, {y.restaurant}, {y.name}, {y.price}")
-                # return
+    if not target_dishes:
+        print(f"没有找到菜品: {', '.join(order_config.dishname)}")
+        return
+
     data = meican.order(target_dishes)
-    print(f"下单结果:,{data["message"]}, {y.restaurant}, {y.name}, {y.price}")
+    dishes_desc = "; ".join(
+        f"{dish.restaurant}, {dish.name}, {dish.price}" for dish in target_dishes
+    )
+    print(f"下单结果: {data.get('message')}, {dishes_desc}")
 
 def execute(argv=None):
 
